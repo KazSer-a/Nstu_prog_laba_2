@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
+GO_DIR = ROOT / "go"
 CASES = {
     "1": ("3 2\nA B C\nA B\nB C\n", "Возможно"),
     "2": ("5\nSETADD cat\nSET_AT cat\nSETDEL cat\nSET_AT cat\nSET_AT dog\n", "TRUE\nFALSE\nFALSE"),
@@ -16,8 +17,8 @@ CASES = {
 }
 
 
-def run(command, data=""):
-    result = subprocess.run(command, input=data, text=True, capture_output=True, cwd=ROOT)
+def run(command, data="", cwd=ROOT):
+    result = subprocess.run(command, input=data, text=True, capture_output=True, cwd=cwd)
     if result.returncode != 0:
         raise AssertionError(f"Команда {command} завершилась с ошибкой:\n{result.stderr}\n{result.stdout}")
     return result.stdout.strip()
@@ -26,9 +27,9 @@ def run(command, data=""):
 def main():
     run(["make", "-C", str(ROOT / "cpp"), "clean"])
     run(["make", "-C", str(ROOT / "cpp")])
-    run(["go", "-C", str(ROOT / "go"), "test", "./..."])
-    run(["go", "-C", str(ROOT / "go"), "build", "-o", "laba2", "."])
-    programs = {"C++": [str(ROOT / "cpp" / "laba2")], "Go": [str(ROOT / "go" / "laba2")]}
+    run(["go", "test", "./..."], cwd=GO_DIR)
+    run(["go", "build", "-o", "laba2", "."], cwd=GO_DIR)
+    programs = {"C++": [str(ROOT / "cpp" / "laba2")], "Go": [str(GO_DIR / "laba2")]}
     for language, binary in programs.items():
         for task, (source, expected) in CASES.items():
             actual = run(binary + [task], source)
