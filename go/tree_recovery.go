@@ -1,7 +1,65 @@
 package main
-import("bufio";"fmt";"strconv";"strings")
-type recoverNode struct{key int64;left,right *recoverNode}
+
+import (
+    "bufio"
+    "fmt"
+    "strconv"
+    "strings"
+)
+
 // Находит две вершины, нарушающие порядок симметричного обхода.
-func findSwapped(n *recoverNode,prev,a,b **recoverNode){if n==nil{return};findSwapped(n.left,prev,a,b);if *prev!=nil&&(*prev).key>n.key{if *a==nil{*a=*prev};*b=n};*prev=n;findSwapped(n.right,prev,a,b)}
-// Восстанавливает значения двух перепутанных узлов BST.
-func treeRecovery(in *bufio.Reader,out *bufio.Writer){line,e:=in.ReadString('\n');if e!=nil&&len(line)==0{fmt.Fprintln(out,"Неверный ввод");return};t:=strings.Fields(line);if len(t)==0||t[0]=="#"{fmt.Fprintln(out,"Пустое дерево");return};v,e:=strconv.ParseInt(t[0],10,64);if e!=nil{fmt.Fprintln(out,"Неверный узел");return};root:=&recoverNode{key:v};nodes:=[]*recoverNode{root};p:=1;for i:=0;i<len(nodes)&&p<len(t);i++{if p<len(t)&&t[p]!="#"{x,err:=strconv.ParseInt(t[p],10,64);if err!=nil{fmt.Fprintln(out,"Неверный узел");return};nodes[i].left=&recoverNode{key:x};nodes=append(nodes,nodes[i].left)};p++;if p<len(t)&&t[p]!="#"{x,err:=strconv.ParseInt(t[p],10,64);if err!=nil{fmt.Fprintln(out,"Неверный узел");return};nodes[i].right=&recoverNode{key:x};nodes=append(nodes,nodes[i].right)};p++};var prev,a,b *recoverNode;findSwapped(root,&prev,&a,&b);if a!=nil&&b!=nil{a.key,b.key=b.key,a.key};q:=[]*recoverNode{root};r:=[]string{};for len(q)>0{n:=q[0];q=q[1:];if n==nil{r=append(r,"#");continue};r=append(r,strconv.FormatInt(n.key,10));q=append(q,n.left,n.right)};for len(r)>0&&r[len(r)-1]=="#"{r=r[:len(r)-1]};fmt.Fprintln(out,strings.Join(r," "))}
+func findSwapped(root *l1TreeNode) (*l1TreeNode, *l1TreeNode) {
+    stack := make([]*l1TreeNode, 0)
+    current := root
+    var previous, first, second *l1TreeNode
+    for current != nil || len(stack) > 0 {
+        for current != nil { stack = append(stack, current); current = current.left }
+        current = stack[len(stack)-1]; stack = stack[:len(stack)-1]
+        if previous != nil && previous.key > current.key { if first == nil { first = previous }; second = current }
+        previous = current; current = current.right
+    }
+    return first, second
+}
+
+// Проверяет, что восстановленное дерево удовлетворяет порядку BST.
+func validSearchTree(root *l1TreeNode) bool {
+    stack := make([]*l1TreeNode, 0); current := root; var previous int64; hasPrevious := false
+    for current != nil || len(stack) > 0 {
+        for current != nil { stack = append(stack, current); current = current.left }
+        current = stack[len(stack)-1]; stack = stack[:len(stack)-1]
+        if hasPrevious && previous > current.key { return false }
+        previous, hasPrevious, current = current.key, true, current.right
+    }
+    return true
+}
+
+// Строит дерево по уровневой записи с маркером отсутствующего узла.
+func buildLevelTree(tokens []string) (*l1TreeNode, bool) {
+    if len(tokens) == 0 || tokens[0] == "#" { return nil, false }
+    rootValue, err := strconv.ParseInt(tokens[0], 10, 64); if err != nil { return nil, false }
+    root := &l1TreeNode{key: rootValue}; nodes := []*l1TreeNode{root}; pos := 1
+    for i := 0; i < len(nodes) && pos < len(tokens); i++ {
+        if tokens[pos] != "#" { value, e := strconv.ParseInt(tokens[pos], 10, 64); if e != nil { return root, false }; nodes[i].left = &l1TreeNode{key:value}; nodes = append(nodes, nodes[i].left) }; pos++
+        if pos < len(tokens) { if tokens[pos] != "#" { value, e := strconv.ParseInt(tokens[pos], 10, 64); if e != nil { return root, false }; nodes[i].right = &l1TreeNode{key:value}; nodes = append(nodes, nodes[i].right) }; pos++ }
+    }
+    return root, pos == len(tokens)
+}
+
+// Сериализует дерево в уровневую запись.
+func serializeLevelTree(root *l1TreeNode) string {
+    queue := []*l1TreeNode{root}; result := make([]string, 0)
+    for len(queue) > 0 { node := queue[0]; queue = queue[1:]; if node == nil { result = append(result, "#"); continue }; result = append(result, strconv.FormatInt(node.key, 10)); queue = append(queue, node.left, node.right) }
+    for len(result) > 0 && result[len(result)-1] == "#" { result = result[:len(result)-1] }
+    return strings.Join(result, " ")
+}
+
+// Восстанавливает значения двух перепутанных узлов BST без изменения связей.
+func treeRecovery(in *bufio.Reader, out *bufio.Writer) {
+    line, err := in.ReadString('\n'); if err != nil && len(line) == 0 { fmt.Fprintln(out, "Неверный ввод"); return }
+    tokens := strings.Fields(line); if len(tokens) == 0 || tokens[0] == "#" { fmt.Fprintln(out, "Пустое дерево"); return }
+    root, parsed := buildLevelTree(tokens); if !parsed { fmt.Fprintln(out, "Неверное представление дерева"); return }
+    first, second := findSwapped(root); if first == nil || second == nil { fmt.Fprintln(out, "Не найдены два перепутанных узла"); return }
+    first.key, second.key = second.key, first.key
+    if !validSearchTree(root) { first.key, second.key = second.key, first.key; fmt.Fprintln(out, "Не удалось восстановить дерево"); return }
+    fmt.Fprintln(out, serializeLevelTree(root))
+}
