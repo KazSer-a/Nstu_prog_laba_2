@@ -1,0 +1,4 @@
+package main
+import("bufio";"fmt")
+// Проверяет возможность выполнить задачи топологической сортировкой.
+func taskExecutionOrder(in *bufio.Reader,out *bufio.Writer){var n,m int;if _,e:=fmt.Fscan(in,&n,&m);e!=nil||n<0||m<0{fmt.Fprintln(out,"Неверный ввод");return};ids:=map[string]int{};g:=[][]int{};d:=[]int{};id:=func(s string)int{if v,ok:=ids[s];ok{return v};v:=len(ids);ids[s]=v;g=append(g,nil);d=append(d,0);return v};for i:=0;i<n;i++{var s string;fmt.Fscan(in,&s);id(s)};for i:=0;i<m;i++{var a,b string;fmt.Fscan(in,&a,&b);x,y:=id(b),id(a);g[x]=append(g[x],y);d[y]++};st:=[]int{};for i,v:=range d{if v==0{st=append(st,i)}};done:=0;for len(st)>0{v:=st[len(st)-1];st=st[:len(st)-1];done++;for _,x:=range g[v]{d[x]--;if d[x]==0{st=append(st,x)}}};if done==len(d){fmt.Fprintln(out,"Возможно")}else{fmt.Fprintln(out,"Невозможно")}}
