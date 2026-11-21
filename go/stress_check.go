@@ -29,10 +29,10 @@ func stressCheck(in *bufio.Reader, out *bufio.Writer) {
     }
     _, _ = in.ReadString('\n')
     line, _ := in.ReadString('\n')
-    var words l1Array
+    var words l1Array[string]
     for _, word := range strings.Fields(line) { words.pushBack(word) }
     errors := 0
-    for _, word := range words.data {
+    for _, word := range words.data[:words.size] {
         key, position := normalizeWord(word)
         count := 0
         for _, r := range word { if unicode.IsUpper(r) { count++ } }

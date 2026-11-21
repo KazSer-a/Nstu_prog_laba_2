@@ -27,11 +27,35 @@ func calculateEmployeeCounts(names []string, children map[string][]string) (map[
 func employeeHierarchy(in *bufio.Reader, out *bufio.Writer) {
     var count int
     if _,err:=fmt.Fscan(in,&count); err!=nil || count<0 { fmt.Fprintln(out,"Неверный ввод"); return }
-    relation:=newStringHashTable(count*2+3,true); namesSet:=make(map[string]bool); pairs:=make([][2]string,count)
-    for i:=range pairs { if _,err:=fmt.Fscan(in,&pairs[i][0],&pairs[i][1]); err!=nil { fmt.Fprintln(out,"Недостаточно пар сотрудников"); return }; namesSet[pairs[i][0]]=true; namesSet[pairs[i][1]]=true; relation.insert(pairs[i][0],pairs[i][1]) }
-    children:=make(map[string][]string)
-    for _,pair:=range pairs { manager,ok:=relation.get(pair[0]); if ok && manager!=pair[0] { children[manager]=append(children[manager],pair[0]) } }
-    names:=make([]string,0,len(namesSet)); for name:=range namesSet { names=append(names,name) }; sort.Strings(names)
+    relation := newHashTable[string, string](nextPrime(count*2+3), true, stringHash)
+    namesSet := make(map[string]bool)
+    for i := 0; i < count; i++ {
+        var employee, manager string
+        if _, err := fmt.Fscan(in, &employee, &manager); err != nil {
+            fmt.Fprintln(out, "Недостаточно пар сотрудников")
+            return
+        }
+        if existing, found := relation.get(employee); found {
+            if existing != manager {
+                fmt.Fprintln(out, "Ошибка: у сотрудника несколько менеджеров")
+                return
+            }
+            continue
+        }
+        relation.insert(employee, manager)
+        namesSet[employee], namesSet[manager] = true, true
+    }
+    children := make(map[string][]string)
+    relation.forEach(func(employee, manager string) {
+        if employee != manager {
+            children[manager] = append(children[manager], employee)
+        }
+    })
+    names := make([]string, 0, len(namesSet))
+    for name := range namesSet {
+        names = append(names, name)
+    }
+    sort.Strings(names)
     result,ok:=calculateEmployeeCounts(names,children); if !ok { fmt.Fprintln(out,"Ошибка: обнаружен цикл в иерархии"); return }
     for _,name:=range names { fmt.Fprintln(out,name,result[name]) }
 }
