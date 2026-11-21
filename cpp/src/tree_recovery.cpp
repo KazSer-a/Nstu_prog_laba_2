@@ -13,14 +13,19 @@ static bool findSwapped(L1TreeNode* root, L1TreeNode*& first, L1TreeNode*& secon
     std::vector<L1TreeNode*> stack;
     L1TreeNode* current = root;
     L1TreeNode* previous = nullptr;
+    L1TreeNode* runStart = nullptr;
     while (current || !stack.empty()) {
         while (current) { stack.push_back(current); current = current->left; }
         current = stack.back();
         stack.pop_back();
         if (previous && previous->key > current->key) {
-            if (!first) first = previous;
+            if (!first) first = runStart;
+            second = current;
+        } else if (previous && previous == second && previous->key == current->key) {
             second = current;
         }
+        // При повторах меняем крайние узлы среди равных ключей.
+        if (!previous || previous->key != current->key) runStart = current;
         previous = current;
         current = current->right;
     }
@@ -36,7 +41,8 @@ static bool isSearchTree(L1TreeNode* root) {
     while (current || !stack.empty()) {
         while (current) { stack.push_back(current); current = current->left; }
         current = stack.back(); stack.pop_back();
-        if (hasPrevious && previous > current->key) return false;
+        if (hasPrevious && (previous > current->key ||
+            (current->left && previous == current->key))) return false;
         previous = current->key; hasPrevious = true; current = current->right;
     }
     return true;

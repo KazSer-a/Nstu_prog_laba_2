@@ -33,7 +33,7 @@ void stressCheck(std::istream& in, std::ostream& out) {
     std::getline(in, line);
     if (!std::getline(in, line)) line.clear();
     std::istringstream words(line);
-    L1Array textWords;
+    L1Array<std::string> textWords;
     std::string word;
     while (words >> word) textWords.pushBack(word);
     int errors = 0;

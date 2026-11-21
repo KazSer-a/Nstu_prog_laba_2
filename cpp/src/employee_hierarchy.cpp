@@ -47,11 +47,17 @@ static bool calculateDescendants(const std::vector<std::string>& names,
 void employeeHierarchy(std::istream& in, std::ostream& out) {
     int count = 0;
     if (!(in >> count) || count < 0) { out << "Неверный ввод\n"; return; }
-    StringHashTable relation(static_cast<size_t>(count) * 2 + 3, true);
+    HashTable<std::string, std::string> relation(nextPrime(static_cast<size_t>(count) * 2 + 3), true);
     std::vector<std::string> names;
     for (int i = 0; i < count; ++i) {
         std::string employee, manager;
         if (!(in >> employee >> manager)) { out << "Недостаточно пар сотрудников\n"; return; }
+        const auto* existing = relation.get(employee);
+        if (existing && *existing != manager) {
+            out << "Ошибка: у сотрудника несколько менеджеров\n";
+            return;
+        }
+        if (existing) continue;
         relation.insert(employee, manager);
         names.push_back(employee);
         names.push_back(manager);
@@ -60,9 +66,8 @@ void employeeHierarchy(std::istream& in, std::ostream& out) {
     names.erase(std::unique(names.begin(), names.end()), names.end());
     std::unordered_map<std::string, std::vector<std::string>> children;
     for (const auto& employee : names) {
-        std::string manager;
-        if (relation.get(employee, manager) && manager != employee)
-            children[manager].push_back(employee);
+        const auto* manager = relation.get(employee);
+        if (manager && *manager != employee) children[*manager].push_back(employee);
     }
     std::unordered_map<std::string, int> descendants;
     if (!calculateDescendants(names, children, descendants)) {

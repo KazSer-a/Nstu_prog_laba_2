@@ -11,12 +11,23 @@ import (
 func findSwapped(root *l1TreeNode) (*l1TreeNode, *l1TreeNode) {
     stack := make([]*l1TreeNode, 0)
     current := root
-    var previous, first, second *l1TreeNode
+    var previous, runStart, first, second *l1TreeNode
     for current != nil || len(stack) > 0 {
         for current != nil { stack = append(stack, current); current = current.left }
         current = stack[len(stack)-1]; stack = stack[:len(stack)-1]
-        if previous != nil && previous.key > current.key { if first == nil { first = previous }; second = current }
-        previous = current; current = current.right
+        if previous != nil && previous.key > current.key {
+            if first == nil {
+                first = runStart
+            }
+            second = current
+        } else if previous != nil && previous == second && previous.key == current.key {
+            second = current
+        }
+        // При повторах меняем крайние узлы среди равных ключей.
+        if previous == nil || previous.key != current.key {
+            runStart = current
+        }
+        previous, current = current, current.right
     }
     return first, second
 }
@@ -27,7 +38,9 @@ func validSearchTree(root *l1TreeNode) bool {
     for current != nil || len(stack) > 0 {
         for current != nil { stack = append(stack, current); current = current.left }
         current = stack[len(stack)-1]; stack = stack[:len(stack)-1]
-        if hasPrevious && previous > current.key { return false }
+        if hasPrevious && (previous > current.key || (current.left != nil && previous == current.key)) {
+            return false
+        }
         previous, hasPrevious, current = current.key, true, current.right
     }
     return true

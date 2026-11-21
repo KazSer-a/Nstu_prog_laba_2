@@ -39,8 +39,24 @@ def main():
         if run(binary + ["1"], cycle) != "Невозможно":
             raise AssertionError(f"{language}: цикл зависимостей не обнаружен")
         hash_result = run(binary + ["6"], "5 11\n-11 -22 -33 -44 -55\n")
-        if "вставлено 5/5" not in hash_result:
+        if hash_result.count("вставлено 5/5") != 2:
             raise AssertionError(f"{language}: отрицательные ключи не обработаны: {hash_result}")
+        for source, expected in [("2 2 1", "2 1 2"), ("2 # 1 # 1", "1 # 1 # 2")]:
+            assert run(binary + ["5"], source + "\n") == expected, (language, source)
+        duplicate_hash = run(binary + ["6"], "4 5\n1 1 6 11\n").splitlines()
+        assert len(duplicate_hash) == 2, language
+        assert "вставлено 3/4, проверено ячеек 7" in duplicate_hash[0], (language, duplicate_hash)
+        assert "вставлено 3/4, проверено ячеек 6" in duplicate_hash[1], (language, duplicate_hash)
+        assert run(binary + ["7"], "3\nA B\nA B\nB B\n") == "A 0\nB 1", language
+        assert "несколько менеджеров" in run(binary + ["7"], "2\nA B\nA C\n"), language
+
+        commands = [f"SETADD k{i}" for i in range(80)]
+        commands += [f"SETDEL k{i}" for i in range(0, 80, 2)]
+        commands += [f"SETADD k{i}" for i in range(80, 160)]
+        commands += [f"SET_AT k{i}" for i in range(160)]
+        expected = ["FALSE" if i < 80 and i % 2 == 0 else "TRUE" for i in range(160)]
+        batch = str(len(commands)) + "\n" + "\n".join(commands) + "\n"
+        assert run(binary + ["2"], batch).splitlines() == expected, language
         with tempfile.TemporaryDirectory() as directory:
             data_file = Path(directory) / "set.txt"
             data_file.write_text("cat\ndog\n", encoding="utf-8")

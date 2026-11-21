@@ -1,7 +1,8 @@
 #pragma once
 #include <cstddef>
 #include <string>
-#include <unordered_set>
+#include <memory>
+#include <utility>
 
 // Узел стека строк из лабораторной работы №1.
 struct L1StackNode { std::string value; L1StackNode* next = nullptr; };
@@ -21,41 +22,43 @@ public:
     ~L1Stack() { std::string value; while (pop(value)) {} }
 };
 
-// Динамический массив строк для последовательного хранения данных.
+// Динамический массив ЛР1 с удвоением ёмкости и доступом по индексу.
+template<class T>
 class L1Array {
-    std::string* data = nullptr;
-    size_t count = 0;
-    size_t capacity = 0;
+    std::size_t count = 0;
+    std::size_t capacity = 0;
+    std::unique_ptr<T[]> data;
+
 public:
     L1Array() = default;
-    L1Array(const L1Array&) = delete;
-    L1Array& operator=(const L1Array&) = delete;
-    // Добавляет строку в конец массива.
-    void pushBack(const std::string& value) { if (count == capacity) { size_t next = capacity ? capacity * 2 : 4; auto* buffer = new std::string[next]; for (size_t i=0;i<count;++i) buffer[i]=data[i]; delete[] data; data=buffer; capacity=next; } data[count++]=value; }
-    // Возвращает число сохранённых строк.
-    size_t size() const { return count; }
-    // Возвращает строку по индексу.
-    const std::string& at(size_t index) const { return data[index]; }
-    // Освобождает память массива.
-    ~L1Array() { delete[] data; }
+    explicit L1Array(std::size_t size)
+        : count(size), capacity(size), data(std::make_unique<T[]>(size)) {}
+
+    void pushBack(const T& value) {
+        if (count == capacity) {
+            const auto next = capacity ? capacity * 2 : 4;
+            auto buffer = std::make_unique<T[]>(next);
+            for (std::size_t i = 0; i < count; ++i) buffer[i] = data[i];
+            data = std::move(buffer);
+            capacity = next;
+        }
+        data[count] = value;
+        ++count;
+    }
+
+    std::size_t size() const { return count; }
+    T& at(std::size_t index) { return data[index]; }
+    const T& at(std::size_t index) const { return data[index]; }
+
+    void swap(L1Array& other) {
+        std::swap(count, other.count);
+        std::swap(capacity, other.capacity);
+        data.swap(other.data);
+    }
 };
 
 // Узел двоичного дерева поиска из лабораторной работы №1.
 struct L1TreeNode { long long key; L1TreeNode* left = nullptr; L1TreeNode* right = nullptr; };
-
-// Множество строк с ожидаемыми O(1) операциями.
-class L1StringSet {
-    std::unordered_set<std::string> values;
-public:
-    // Добавляет элемент во множество.
-    void add(const std::string& value) { values.insert(value); }
-    // Удаляет элемент из множества.
-    void remove(const std::string& value) { values.erase(value); }
-    // Проверяет наличие элемента.
-    bool contains(const std::string& value) const { return values.count(value) != 0; }
-    // Возвращает элементы множества для сохранения.
-    const std::unordered_set<std::string>& all() const { return values; }
-};
 
 // Узел двусвязного списка из лабораторной работы №1.
 struct L1DNode { std::string value; L1DNode* next = nullptr; L1DNode* prev = nullptr; };

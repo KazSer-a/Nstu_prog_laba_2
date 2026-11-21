@@ -1,5 +1,5 @@
 #include "tasks.h"
-#include "l1_structures.h"
+#include "hash_table.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -11,7 +11,7 @@
 void setCommands(std::istream& in, std::ostream& out) {
     int q = 0;
     if (!(in >> q) || q < 0) { out << "Неверный ввод\n"; return; }
-    L1StringSet values;
+    StringSet values;
     for (int i = 0; i < q; ++i) {
         std::string op, value;
         if (!(in >> op >> value)) { out << "Недостаточно данных\n"; return; }
@@ -24,7 +24,7 @@ void setCommands(std::istream& in, std::ostream& out) {
 
 // Выполняет одну команду над множеством, сохранённым в файле.
 void setFileQuery(const std::string& fileName, const std::string& query, std::ostream& out) {
-    L1StringSet values;
+    StringSet values;
     std::ifstream file(fileName);
     std::string value;
     while (file >> value) values.add(value);
@@ -38,7 +38,8 @@ void setFileQuery(const std::string& fileName, const std::string& query, std::os
     std::ofstream output(fileName, std::ios::trunc);
     if (!output) { out << "Не удалось сохранить файл\n"; return; }
     // Сохраняет отсортированные элементы множества по одному на строку.
-    std::vector<std::string> items(values.all().begin(), values.all().end());
+    std::vector<std::string> items;
+    values.forEach([&](const std::string& item) { items.push_back(item); });
     std::sort(items.begin(), items.end());
     for (const auto& item : items) output << item << '\n';
     out << "OK\n";
