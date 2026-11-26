@@ -1,4 +1,4 @@
-.PHONY: all cpp go test clean
+.PHONY: all cpp go clean
 
 all: cpp go
 
@@ -7,9 +7,6 @@ cpp:
 
 go:
 	cd go && go build -o laba2 .
-
-test:
-	python3 tests/smoke_test.py
 
 clean:
 	$(MAKE) -C cpp clean
